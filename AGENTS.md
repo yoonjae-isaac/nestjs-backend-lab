@@ -29,6 +29,9 @@ PostgreSQL/MikroORM 단일 스택, `apps/api + libs` 구조는 이 저장소에 
   함께 남긴 뒤 결론과 trade-off를 작성한다.
 - 각 Lab README에는 정상 시나리오뿐 아니라 관련 인프라 중단, process kill, timeout, 중복,
   지연 등 실패 시나리오를 포함한다.
+- 각 Lab의 구현 코드는 기능 흐름을 따라갈 수 있도록 핵심 처리 단계의 코드 바로 위에 짧은 한국어
+  설명 주석을 작성한다. 이는 `CONVENTIONS.md` §22의 Lab 한정 예외이며, 모든 줄을 그대로 번역하는
+  자명하거나 장황한 주석은 작성하지 않는다.
 
 아래 일반 지침과 충돌할 경우 CONVENTIONS.md가 우선합니다.
 
