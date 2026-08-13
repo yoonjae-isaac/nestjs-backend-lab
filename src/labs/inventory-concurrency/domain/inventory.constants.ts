@@ -10,6 +10,7 @@ export const inventoryStockKey = (skuId: string): string =>
 export const inventoryInitLockKey = (skuId: string): string =>
   `lab:inventory-concurrency:init-lock:${skuId}`;
 
+// 재고 확인과 감소를 Lua 한 번으로 실행해 Redis 안에서 원자적으로 처리한다.
 export const REDIS_DECREASE_SCRIPT = `
 local stock = redis.call('GET', KEYS[1])
 if not stock then
@@ -23,6 +24,7 @@ end
 return redis.call('DECRBY', KEYS[1], quantity)
 `;
 
+// 자신이 발급한 토큰과 일치할 때만 초기화 락을 해제한다.
 export const REDIS_RELEASE_INIT_LOCK_SCRIPT = `
 if redis.call('GET', KEYS[1]) == ARGV[1] then
   return redis.call('DEL', KEYS[1])

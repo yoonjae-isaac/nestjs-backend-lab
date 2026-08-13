@@ -28,6 +28,7 @@ export class InventoryEventProducer {
     remainingStock: number,
     requestId: string,
   ): Promise<InventoryEvent> {
+    // 재전달을 식별할 이벤트 ID와 요청 추적 정보를 포함한 메시지를 만든다.
     const event: InventoryEvent = {
       eventId: randomUUID(),
       eventType: 'INVENTORY_DECREASED',
@@ -40,6 +41,7 @@ export class InventoryEventProducer {
       strategy: 'REDIS_KAFKA',
     };
     const publishStartedAt = performance.now();
+    // 같은 SKU가 같은 파티션으로 가도록 skuId를 Kafka 메시지 키로 사용한다.
     await this.kafka.publish(INVENTORY_TOPIC, order.skuId, event);
     this.metrics.increment('kafkaPublishSuccess');
     this.metrics.observeDuration('kafkaPublishDuration', performance.now() - publishStartedAt);

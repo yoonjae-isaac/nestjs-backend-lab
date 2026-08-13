@@ -33,6 +33,7 @@ export interface InventoryEvent {
 }
 
 export const parseInventoryEvent = (serializedEvent: string): InventoryEvent => {
+  // 외부 메시지는 신뢰하지 않고 런타임에서 이벤트 계약을 모두 확인한다.
   const parsedEvent: unknown = JSON.parse(serializedEvent);
   if (
     typeof parsedEvent !== 'object' ||

@@ -35,6 +35,7 @@ export class InventoryPostgresRepository implements OnModuleInit {
 
   async initializeSchema(): Promise<void> {
     await this.postgres.withTransaction(async (client) => {
+      // 여러 앱 인스턴스가 동시에 뜨더라도 한 인스턴스만 스키마를 생성하게 직렬화한다.
       await client.query(
         `SELECT pg_advisory_xact_lock(hashtext('lab_inventory_concurrency_schema'))`,
       );
@@ -62,6 +63,7 @@ export class InventoryPostgresRepository implements OnModuleInit {
 
   async reset(skuId: string, stock: number): Promise<void> {
     await this.postgres.withTransaction(async (client) => {
+      // 초기 재고를 덮어쓰고 같은 SKU의 이벤트 중복 처리 이력도 함께 비운다.
       await client.query(
         `
           INSERT INTO lab_inventory_concurrency.inventory (sku_id, stock, updated_at)
@@ -87,6 +89,7 @@ export class InventoryPostgresRepository implements OnModuleInit {
   }
 
   async writeStockWithoutLock(skuId: string, stock: number): Promise<void> {
+    // NAIVE 전략은 읽은 시점의 버전을 확인하지 않고 재고를 그대로 덮어쓴다.
     await this.postgres.query(
       `
         UPDATE lab_inventory_concurrency.inventory
@@ -104,6 +107,7 @@ export class InventoryPostgresRepository implements OnModuleInit {
       transactionStartedAt = performance.now();
       await this.applyTransactionTimeouts(client);
       const queryStartedAt = performance.now();
+      // 충분한 재고가 있을 때만 한 SQL 문에서 검증과 감소를 동시에 수행한다.
       const updateRecord = await client.query<StockRow>(
         `
           UPDATE lab_inventory_concurrency.inventory
@@ -129,6 +133,7 @@ export class InventoryPostgresRepository implements OnModuleInit {
     const persistenceRecord = await this.postgres.withTransaction(async (client) => {
       transactionStartedAt = performance.now();
       await this.applyTransactionTimeouts(client);
+      // 이벤트 ID를 먼저 기록해 같은 Kafka 메시지가 다시 와도 한 번만 반영한다.
       const processedEvent = await client.query<{ event_id: string }>(
         `
           INSERT INTO lab_inventory_concurrency.inventory_processed_event (event_id, sku_id)
@@ -143,6 +148,7 @@ export class InventoryPostgresRepository implements OnModuleInit {
         return { duplicate: true, remainingStock: null };
       }
 
+      // 중복 처리 이력과 재고 감소를 같은 트랜잭션에 두어 둘 중 하나만 커밋되지 않게 한다.
       const updateRecord = await client.query<StockRow>(
         `
           UPDATE lab_inventory_concurrency.inventory
@@ -170,6 +176,7 @@ export class InventoryPostgresRepository implements OnModuleInit {
   }
 
   private async applyTransactionTimeouts(client: PoolClient): Promise<void> {
+    // 경합이나 비정상 쿼리가 실험 프로세스를 무한히 점유하지 않도록 트랜잭션별 제한을 건다.
     await client.query(`SELECT set_config('lock_timeout', $1, true)`, [
       `${this.config.postgresLockTimeoutMs}ms`,
     ]);

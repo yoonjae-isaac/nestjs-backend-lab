@@ -41,6 +41,7 @@ export class InventoryEventConsumer implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // 토픽을 보장한 뒤 같은 consumer group으로 참여해 이벤트를 인스턴스 간 분배한다.
     await this.kafka.ensureTopic(INVENTORY_TOPIC, INVENTORY_TOPIC_PARTITIONS);
     this.consumer = this.kafka.createConsumer(INVENTORY_CONSUMER_GROUP_SUFFIX);
     await this.consumer.connect();
@@ -56,9 +57,11 @@ export class InventoryEventConsumer implements OnModuleInit, OnModuleDestroy {
 
   async handleEvent(event: InventoryEvent): Promise<void> {
     if (this.config.consumerDelayMs > 0) {
+      // 소비 지연을 주입해 Redis와 PostgreSQL의 일시적 불일치를 관찰한다.
       await wait(this.config.consumerDelayMs);
     }
 
+    // 이벤트 중복 확인과 PostgreSQL 재고 감소를 하나의 트랜잭션으로 처리한다.
     const persistenceRecord = await this.postgresRepository.persistInventoryEvent(event);
     if (persistenceRecord.duplicate) {
       this.metrics.increment('kafkaDuplicateEvent');
@@ -95,6 +98,7 @@ export class InventoryEventConsumer implements OnModuleInit, OnModuleDestroy {
       throw new Error('Inventory event has no value');
     }
 
+    // Kafka 원문을 도메인 이벤트로 검증한 후 비즈니스 처리에 넘긴다.
     const event = parseInventoryEvent(payload.message.value.toString('utf8'));
     this.logger.log({
       consumerGroup: `backend-lab.${INVENTORY_CONSUMER_GROUP_SUFFIX}`,

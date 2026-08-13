@@ -54,6 +54,7 @@ export class InventoryMetricsService {
   }
 
   observeDuration(metric: string, durationMs: number): void {
+    // 원본 표본 대신 개수·합계·최댓값을 누적해 구간별 처리 시간을 가볍게 관찰한다.
     const countKey = `${metric}Count`;
     const totalKey = `${metric}TotalMs`;
     const maxKey = `${metric}MaxMs`;
@@ -73,6 +74,7 @@ export class InventoryMetricsService {
   }
 
   getSnapshot(): InventoryMetricsSnapshot {
+    // 각 앱 인스턴스의 전략별 지표와 현재 DB 풀 상태를 한 번에 반환한다.
     return {
       counters: Object.fromEntries(this.counters),
       instanceId: this.instanceId,
@@ -86,6 +88,7 @@ export class InventoryMetricsService {
   }
 
   private summarize(metricRecord: StrategyMetricRecord): StrategyMetrics {
+    // 기록된 요청 지연을 정렬해 평균과 주요 백분위 값을 계산한다.
     const sortedLatencies = [...metricRecord.latencies].sort((left, right) => left - right);
     const totalRequests = metricRecord.success + metricRecord.outOfStock + metricRecord.error;
     const averageLatencyMs =

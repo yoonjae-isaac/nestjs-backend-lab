@@ -44,8 +44,7 @@ export class NaiveInventoryService {
     });
 
     try {
-      // EXPERIMENT ONLY: Race Condition / Lost Update를 재현하기 위한 의도적으로 잘못된 구현.
-      // Production에서 사용하지 않는다.
+      // 락 없이 재고를 먼저 읽어 여러 요청이 같은 값을 보게 한다.
       const stock = await this.postgresRepository.findStock(order.skuId);
       if (stock === null || stock < order.quantity) {
         const duration = performance.now() - startedAt;
@@ -60,8 +59,10 @@ export class NaiveInventoryService {
       }
 
       if (delayMs > 0) {
+        // 읽기와 쓰기 사이를 벌려 Lost Update가 발생할 확률을 의도적으로 높인다.
         await wait(delayMs);
       }
+      // 앞서 읽은 재고를 기준으로 계산한 값을 그대로 덮어써 동시 요청의 변경을 유실시킨다.
       const remainingStock = stock - order.quantity;
       await this.postgresRepository.writeStockWithoutLock(order.skuId, remainingStock);
       const duration = performance.now() - startedAt;

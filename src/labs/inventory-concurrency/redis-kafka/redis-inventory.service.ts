@@ -27,6 +27,7 @@ export class RedisInventoryService {
     const startedAt = performance.now();
 
     try {
+      // 캐시 미스면 Redis 재고를 한 번 초기화한 뒤 Lua로 원자적으로 차감한다.
       await this.redisRepository.getOrInitializeStock(order.skuId, requestId);
       const remainingStock = await this.redisRepository.decrease(order.skuId, order.quantity);
       const redisDuration = performance.now() - startedAt;
@@ -47,8 +48,10 @@ export class RedisInventoryService {
         this.logFields('REDIS_DECREASE_SUCCESS', order.skuId, requestId, redisDuration),
       );
       try {
+        // Redis 변경이 성공한 뒤 Kafka 이벤트를 발행해 PostgreSQL에 비동기로 반영한다.
         await this.eventProducer.publish(order, remainingStock, requestId);
       } catch (error: unknown) {
+        // 발행 실패 시 Redis만 변경된 dual-write 불일치를 응답과 로그에 명시한다.
         const duration = performance.now() - startedAt;
         this.metrics.increment('kafkaPublishFailure');
         this.metrics.record('REDIS_KAFKA', 'error', duration);
