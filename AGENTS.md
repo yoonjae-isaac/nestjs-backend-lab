@@ -4,7 +4,7 @@ LLM 코딩 시 흔히 발생하는 오류를 줄이기 위한 행동 지침입�
 
 ## 0. 본 프로젝트 컨벤션 (필독)
 
-**작업 전 반드시 [CONVENTIONS.md](./CONVENTIONS.md)를 먼저 확인하세요.**
+**작업 전 반드시 [CONVENTIONS.md,README.md](./CONVENTIONS.md, ./README.md)를 먼저 확인하세요.**
 
 이 저장소의 정체성은 특정 서비스가 아니라 **Backend Engineering Lab**이다. 따라서
 `CONVENTIONS.md`의 범용 코딩 규칙은 따르되, 해당 문서에 남아 있는 El Dorado 도메인 규칙,
