@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: backend-lab.inventory-concurrency
+      KAFKA_ENABLED: 'true'
+      INVENTORY_CONSUMER_DELAY_MS: '${INVENTORY_CONSUMER_DELAY_MS:-0}'
+      INVENTORY_INIT_LOCK_RETRY_MS: '${INVENTORY_INIT_LOCK_RETRY_MS:-25}'
+      INVENTORY_INIT_LOCK_TTL_MS: '${INVENTORY_INIT_LOCK_TTL_MS:-3000}'
+      INVENTORY_INIT_LOCK_WAIT_MS: '${INVENTORY_INIT_LOCK_WAIT_MS:-3000}'
+      INVENTORY_NAIVE_DELAY_MS: '${INVENTORY_NAIVE_DELAY_MS:-10}'
+      INVENTORY_POSTGRES_LOCK_TIMEOUT_MS: '${INVENTORY_POSTGRES_LOCK_TIMEOUT_MS:-3000}'
+      INVENTORY_POSTGRES_STATEMENT_TIMEOUT_MS: '${INVENTORY_POSTGRES_STATEMENT_TIMEOUT_MS:-5000}'
+      LOG_LEVEL: info
+      POSTGRES_ENABLED: 'true'
+      POSTGRES_URL: postgresql://lab:lab@postgres:5432/backend_lab
+      REDIS_ENABLED: 'true'
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    volumes:
+      - ./infra/labs/inventory-concurrency/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy

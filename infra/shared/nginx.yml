@@ -1,0 +1,5 @@
+services:
+  nginx:
+    image: nginx:1.28-alpine
+    ports:
+      - '${LAB_HTTP_PORT:-8088}:80'

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.local
+results/**/*.json
+results/**/*.csv
+!results/**/.gitkeep
+*.log
+.DS_Store
