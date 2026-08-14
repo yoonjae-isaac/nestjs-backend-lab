@@ -1,0 +1,11 @@
+import { Module } from '@nestjs/common';
+
+import { ConfigModule } from '../../../../common/config/config.module';
+import { HealthModule } from '../../../../common/health/health.module';
+import { LoggerModule } from '../../../../common/logger/logger.module';
+import { SagaPatternModule } from '../../saga-pattern.module';
+
+@Module({
+  imports: [ConfigModule, LoggerModule, HealthModule, SagaPatternModule],
+})
+export class SagaGatewayModule {}

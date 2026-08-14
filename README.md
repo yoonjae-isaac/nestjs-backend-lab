@@ -29,12 +29,15 @@ src/
 │   ├── kafka/
 │   ├── logger/
 │   └── redis/
-└── labs/inventory-concurrency/
+└── labs/
+    ├── cache-stampede/
+    ├── inventory-concurrency/
+    └── saga-pattern/
 infra/
 ├── shared/
-└── labs/inventory-concurrency/
+└── labs/{cache-stampede,inventory-concurrency,saga-pattern}/
 load-tests/inventory-concurrency/
-results/inventory-concurrency/
+results/{inventory-concurrency,saga-pattern}/
 scripts/
 test/
 ```
@@ -150,6 +153,41 @@ k6 run load-tests/inventory-concurrency/redis-kafka.js
 
 향후 실험 결과의 원시 JSON 또는 CSV는 `results/{lab-name}`에 저장한다.
 
+## Saga Pattern Lab
+
+Saga Lab은 gateway, Order, Inventory, Payment, Shipping, Orchestrator를 독립 process로 실행한다.
+PostgreSQL과 Kafka만 사용하며 기본 HTTP port는 `8089`, Kafka UI는 `28080`이다.
+
+```bash
+pnpm lab:config saga-pattern
+pnpm lab:up saga-pattern
+curl -X POST http://localhost:8089/labs/saga-pattern/choreography/orders \
+  -H 'Content-Type: application/json' -d '{"failAt":"SHIPPING"}'
+curl -X POST http://localhost:8089/labs/saga-pattern/orchestration/orders \
+  -H 'Content-Type: application/json' -d '{"failAt":"SHIPPING"}'
+pnpm lab:logs saga-pattern
+pnpm lab:down saga-pattern
+```
+
+전체 API, topic, 성공·실패·보상 실패 시나리오와 두 방식의 비교는
+[`src/labs/saga-pattern/README.md`](./src/labs/saga-pattern/README.md)에 정리했다.
+
+## Cache Stampede Lab
+
+Cache Stampede Lab은 NestJS 3개 인스턴스, PostgreSQL 원본, Redis 캐시로 고정 TTL 기준 전략과
+TTL Jitter, Refresh Ahead, Stale-While-Revalidate, Single Flight를 비교한다. 기본 HTTP port는
+`8090`이다.
+
+```bash
+pnpm lab:config cache-stampede
+pnpm lab:up cache-stampede
+pnpm lab:cache-stampede:smoke
+pnpm lab:down cache-stampede
+```
+
+각 전략의 정확한 의미, 재현 API, k6 조건과 운영 trade-off는
+[`src/labs/cache-stampede/README.md`](./src/labs/cache-stampede/README.md)에 정리했다.
+
 ## 새로운 Lab 추가
 
 1. `src/labs/{lab-name}`에 module, `lab.config.ts`, README와 실제 필요한 파일만 추가한다.
@@ -167,3 +205,9 @@ Lab README에는 목적, 문제, 가설, infrastructure, 구현, 실행, 시나�
 현재 `NAIVE`, PostgreSQL `DB_ATOMIC`, `REDIS_KAFKA` 전략과 reset/state/metrics API가 구현돼 있다.
 optimistic/pessimistic lock, Redis distributed-lock 감소, Outbox 및 실제 benchmark 결과는 아직
 추가하지 않았다. 세부 실험 방법과 알려진 dual-write 문제는 Lab README를 따른다.
+
+## Saga Pattern 현재 상태
+
+Choreography와 Orchestration의 성공, Inventory/Payment/Shipping 실패, 역순 보상,
+compensation failure, timeline 조회가 구현되어 있다. 메시지 처리 이력과 transactional outbox를
+사용하며 timeout scheduler와 DLQ 운영 정책은 의도적으로 다음 확장 범위로 남겼다.

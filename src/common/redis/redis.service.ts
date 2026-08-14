@@ -52,12 +52,20 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.getClient().set(key, value);
   }
 
+  async setWithTtl(key: string, value: string, ttlMs: number): Promise<'OK'> {
+    return this.getClient().set(key, value, 'PX', ttlMs);
+  }
+
   async del(key: string): Promise<number> {
     return this.getClient().del(key);
   }
 
   async exists(key: string): Promise<boolean> {
     return (await this.getClient().exists(key)) === 1;
+  }
+
+  async ttlMs(key: string): Promise<number> {
+    return this.getClient().pttl(key);
   }
 
   isConfigured(): boolean {

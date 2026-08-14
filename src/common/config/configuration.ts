@@ -13,6 +13,16 @@ export interface AppConfig {
     enabled: boolean;
   };
   logLevel: string;
+  cacheStampede: {
+    baseTtlMs: number;
+    jitterMs: number;
+    lockRetryMs: number;
+    lockTtlMs: number;
+    lockWaitMs: number;
+    originDelayMs: number;
+    refreshAheadMs: number;
+    staleMs: number;
+  };
   inventoryConcurrency: {
     consumerDelayMs: number;
     initLockRetryMs: number;
@@ -37,6 +47,12 @@ export interface AppConfig {
     enabled: boolean;
     url: string;
   };
+  sagaPattern: {
+    enabled: boolean;
+    outboxLeaseMs: number;
+    outboxPollMs: number;
+    serviceRole: string;
+  };
 }
 
 const toBoolean = (value: string | undefined, fallback: boolean): boolean => {
@@ -59,6 +75,16 @@ const toPositiveInteger = (value: string | undefined, fallback: number): number 
 
 export const configuration = (): { app: AppConfig } => ({
   app: {
+    cacheStampede: {
+      baseTtlMs: toPositiveInteger(process.env.CACHE_STAMPEDE_BASE_TTL_MS, 10_000),
+      jitterMs: toNonNegativeInteger(process.env.CACHE_STAMPEDE_JITTER_MS, 2_000),
+      lockRetryMs: toPositiveInteger(process.env.CACHE_STAMPEDE_LOCK_RETRY_MS, 25),
+      lockTtlMs: toPositiveInteger(process.env.CACHE_STAMPEDE_LOCK_TTL_MS, 5_000),
+      lockWaitMs: toPositiveInteger(process.env.CACHE_STAMPEDE_LOCK_WAIT_MS, 5_000),
+      originDelayMs: toNonNegativeInteger(process.env.CACHE_STAMPEDE_ORIGIN_DELAY_MS, 200),
+      refreshAheadMs: toPositiveInteger(process.env.CACHE_STAMPEDE_REFRESH_AHEAD_MS, 2_000),
+      staleMs: toPositiveInteger(process.env.CACHE_STAMPEDE_STALE_MS, 5_000),
+    },
     env: (process.env.NODE_ENV as AppConfig['env'] | undefined) ?? 'development',
     instanceId: process.env.INSTANCE_ID ?? hostname(),
     kafka: {
@@ -101,6 +127,12 @@ export const configuration = (): { app: AppConfig } => ({
     redis: {
       enabled: toBoolean(process.env.REDIS_ENABLED, false),
       url: process.env.REDIS_URL ?? 'redis://localhost:6379',
+    },
+    sagaPattern: {
+      enabled: toBoolean(process.env.SAGA_ENABLED, false),
+      outboxLeaseMs: toPositiveInteger(process.env.SAGA_OUTBOX_LEASE_MS, 10_000),
+      outboxPollMs: toPositiveInteger(process.env.SAGA_OUTBOX_POLL_MS, 50),
+      serviceRole: process.env.SAGA_SERVICE_ROLE ?? '',
     },
   },
 });

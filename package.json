@@ -24,6 +24,8 @@
     "lab:down": "node scripts/lab-compose.mjs down",
     "lab:logs": "node scripts/lab-compose.mjs logs",
     "lab:config": "node scripts/lab-compose.mjs config",
+    "lab:saga:smoke": "node scripts/saga-smoke.mjs",
+    "lab:cache-stampede:smoke": "node scripts/cache-stampede-smoke.mjs",
     "infra:postgres": "docker compose -p backend-lab-postgres -f infra/shared/postgres.yml up -d",
     "infra:mysql": "docker compose -p backend-lab-mysql -f infra/shared/mysql.yml up -d",
     "infra:redis": "docker compose -p backend-lab-redis -f infra/shared/redis.yml up -d",

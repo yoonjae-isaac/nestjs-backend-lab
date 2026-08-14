@@ -57,6 +57,37 @@ describe('application (e2e)', () => {
       });
   });
 
+  it('exposes the Cache Stampede lab config', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/labs/cache-stampede')
+      .expect(200)
+      .expect(({ body }: { body: { name?: string } }) => {
+        expect(body.name).toBe('cache-stampede');
+      });
+  });
+
+  it('does not query cache data when its infrastructure is disabled', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/labs/cache-stampede/single-flight/products/product-1')
+      .expect(503);
+  });
+
+  it('exposes the Saga Pattern lab config', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/labs/saga-pattern')
+      .expect(200)
+      .expect(({ body }: { body: { name?: string } }) => {
+        expect(body.name).toBe('saga-pattern');
+      });
+  });
+
+  it('does not start a Saga when its infrastructure is disabled', async () => {
+    await request(app.getHttpServer() as Server)
+      .post('/labs/saga-pattern/choreography/orders')
+      .send({ failAt: 'NONE' })
+      .expect(503);
+  });
+
   it('rejects an invalid inventory order', async () => {
     await request(app.getHttpServer() as Server)
       .post('/labs/inventory-concurrency/db-atomic/orders')
